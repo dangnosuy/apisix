@@ -12,37 +12,50 @@ API_KEY="edd1c9f034335f136f87ad84b625c8f1"
 
 echo "🔧 Đang thiết lập các route cho APISIX với IP $HOST_IP..."
 
-# Define routes
+# Định nghĩa các route và cổng tương ứng
 declare -A routes=(
     [1]="/login"
     [2]="/register"
-    [3]="/top-customer"
-    [4]="/all-customers"
+    [3]="/update-permision"
+    [4]="/products"
+    [5]="/top-5-orders"
+    [6]="/order"
+    [7]="/update-product"
+    [8]="/add-product"
+    [9]="/delete-product"
+    [10]="/all-customers"
 )
 
-declare -A upstreams=(
-    [1]="$HOST_IP:5000"
-    [2]="$HOST_IP:5000"
-    [3]="$HOST_IP:6000"
-    [4]="$HOST_IP:7000"
+declare -A ports=(
+    [1]=5000
+    [2]=5000
+    [3]=5000
+    [4]=6000
+    [5]=6000
+    [6]=6000
+    [7]=6000
+    [8]=6000
+    [9]=6000
+    [10]=7000
 )
 
 all_ok=true
 
 for id in "${!routes[@]}"; do
     uri="${routes[$id]}"
-    upstream="${upstreams[$id]}"
+    port="${ports[$id]}"
+    upstream="$HOST_IP:$port"
     
     echo "➡️  Thiết lập route $uri --> $upstream"
 
     response=$(curl -s -o /dev/null -w "%{http_code}" -X PUT "$ADMIN_API/routes/$id" \
         -H "Content-Type: application/json" \
-	-H "X-API-KEY: $API_KEY" \
+        -H "X-API-KEY: $API_KEY" \
         -d "{
             \"uri\": \"$uri\",
             \"upstream\": {
                 \"type\": \"roundrobin\",
-                \"scheme\": \"https\",
+                \"scheme\": \"http\",
                 \"nodes\": {
                     \"$upstream\": 1
                 }
