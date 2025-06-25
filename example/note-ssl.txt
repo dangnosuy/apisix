@@ -1,0 +1,56 @@
+#!/bin/bash
+
+# Tên file mặc định
+KEY_FILE="ecc_server.key"
+CERT_FILE="ecc_server.crt"
+
+# Tên miền mặc định dùng cho SNI và CN
+DEFAULT_DOMAIN="apisix.local"
+
+echo "🔐 Đang tạo chứng chỉ tự ký sử dụng ECC..."
+
+# Tạo khóa riêng ECC
+openssl ecparam -name prime256v1 -genkey -noout -out "$KEY_FILE"
+
+# Tạo chứng chỉ tự ký ECC
+openssl req -new -x509 -key "$KEY_FILE" -out "$CERT_FILE" -days 365 \
+  -subj "/CN=$DEFAULT_DOMAIN"
+
+# Kiểm tra kết quả
+if [[ -f "$KEY_FILE" && -f "$CERT_FILE" ]]; then
+    echo "✅ Đã tạo xong:"
+    echo "  🔑 Private key: $KEY_FILE"
+    echo "  📄 Certificate: $CERT_FILE"
+    echo "  📅 Hiệu lực: 365 ngày"
+else
+    echo "❌ Có lỗi xảy ra khi tạo chứng chỉ."
+    exit 1
+fi
+* Tạo file .sh chạy ở trên để tạo key ecc
+apisix:
+  node_listen: 9080              # APISIX listening port
+  enable_ipv6: false
+
+  ssl:
+    enable: true
+    listen:
+      - ip: 0.0.0.0
+        port: 9443
+  enable_control: true
+  control:
+    ip: "0.0.0.0"
+    port: 9092
+
+* Thêm ssl vào như trên nếu thiếu thì thêm vào
+curl http://127.0.0.1:9180/apisix/admin/ssls/2 \
+  -H "X-API-KEY: edd1c9f034335f136f87ad84b625c8f1" \
+  -H "Content-Type: application/json" \
+  -X PUT -d '{
+    "cert": "-----BEGIN CERTIFICATE-----\nMIIBgjCCASmgAwIBAgIUKMY5iE92Cw5giJz9NZn5pgRy9BQwCgYIKoZIzj0EAwIw\nFzEVMBMGA1UEAwwMYXBpc2l4LmxvY2FsMB4XDTI1MDYyNTExMzAzNloXDTI2MDYy\nNTExMzAzNlowFzEVMBMGA1UEAwwMYXBpc2l4LmxvY2FsMFkwEwYHKoZIzj0CAQYI\nKoZIzj0DAQcDQgAEB+FhEtVBC05oWlX+4y0n1BNDPEK8URGdWq1Z+qJ1C9Ed4zPl\n8+Rj9kYlZwitKB8bvI24thJS2cKq0eeAXAbOIqNTMFEwHQYDVR0OBBYEFFmJckaK\n1V9YDOUSAeq5AHektc4GMB8GA1UdIwQYMBaAFFmJckaK1V9YDOUSAeq5AHektc4G\nMA8GA1UdEwEB/wQFMAMBAf8wCgYIKoZIzj0EAwIDRwAwRAIgVWURpeW43QPikaU0\nITQTEyjvjGy5l9CV449wGJfMehECIFoY5qrMz9kUN1Xk6TSAIqyAeXmdqEXP2nEW\nO7jRI/EW\n-----END CERTIFICATE-----",
+    "key": "-----BEGIN EC PRIVATE KEY-----\nMHcCAQEEIFy68TzGIhTMdJIxdKFXAqcXdlpRFZIU52bRilTT25fpoAoGCCqGSM49\nAwEHoUQDQgAEB+FhEtVBC05oWlX+4y0n1BNDPEK8URGdWq1Z+qJ1C9Ed4zPl8+Rj\n9kYlZwitKB8bvI24thJS2cKq0eeAXAbOIg==\n-----END EC PRIVATE KEY-----",
+    "sni": "anti.hacker"
+}'
+
+* Bỏ nội dung của crt và key lên AI để tạo đoạn command như trên và chạy
+**QUAN TRỌNG****
+- Không sử dụng IP, tự sửa file host để có domain và sử dụng sni có domain tương tự để truy cập
